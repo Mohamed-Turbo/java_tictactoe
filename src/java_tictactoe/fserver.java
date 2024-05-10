@@ -6,12 +6,30 @@ package java_tictactoe;
 
 import java.awt.Toolkit;
 import java.awt.event.WindowEvent;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java_tictactoe.try3Online;
 
 /**
  *
  * @author TURBO
  */
 public class fserver extends javax.swing.JFrame {
+    
+    public boolean serv=false;
+    private String ip = "localhost";
+    private int port = 22222;
+    private boolean yourTurn = false;
+    private boolean circle = true;
+    private ServerSocket serverSocket;
+    private Socket socket;
+
+
 
     /**
      * Creates new form f_server
@@ -20,6 +38,31 @@ public class fserver extends javax.swing.JFrame {
         initComponents();
     }
 
+    private void initializeServer() {
+        try {
+                serverSocket = new ServerSocket(port, 8, InetAddress.getByName(ip));
+        } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("error in server.");
+        }
+        System.out.println("Successfully created server.");
+        serv = true;
+        yourTurn = true;
+        circle = false;
+    }
+    private boolean connect() {
+        try {
+            socket = new Socket(ip, port);
+//            dos = new DataOutputStream(socket.getOutputStream());
+//            dis = new DataInputStream(socket.getInputStream());
+//            accepted = true;
+        } catch (IOException e) {
+            System.out.println("Unable to connect to the address: " + ip + ":" + port + " | Starting a server");
+            return false;
+        }
+            System.out.println("Successfully connected to the server.");
+        return true;
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -114,9 +157,48 @@ public class fserver extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField2ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        play_online py = new play_online();
-        py.setVisible(true);
+        String text;
+        ip = jTextField1.getText();
+        
+        text = jTextField2.getText();
+        port = Integer.parseInt(text);
+        try3Online py = new try3Online(ip,port);
         close();
+        
+//        if (!connect()) initializeServer();
+//        if(!serv){
+//            play_online py = new play_online(ip,port,circle, yourTurn);
+//            py.setVisible(true);
+//        }else{
+//            play_online py = new play_online(ip,port,circle, yourTurn);
+//            py.setVisible(true);
+//        }
+        
+//        try {
+//            Runtime.getRuntime().exec("try3Online.java");
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
+
+//    ProcessBuilder pb = new ProcessBuilder("cmd");
+//    pb.directory(new File("C:\\Users\\TURBO\\Documents\\NetBeansProjects\\java_tictactoe\\src\\java_tictactoe\\try3Online.java"));
+//    Process process;
+//    try {
+//        process = pb.start();
+//        process.waitFor();
+//    } catch (Exception e) {
+//        e.printStackTrace();
+//    }
+
+//        py.getClass();
+
+//        try3Online customerPage = new try3Online(ip,port);
+//        customerPage.setVisible(true);
+//        this.setVisible(true);
+
+//        try3Online myRunnable = new try3Online();
+//        Thread thread = new Thread(myRunnable);
+//        thread.start();
     }//GEN-LAST:event_jButton3ActionPerformed
 
     /**
@@ -166,3 +248,7 @@ public class fserver extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField2;
     // End of variables declaration//GEN-END:variables
 }
+
+
+
+

@@ -5,27 +5,238 @@
 package java_tictactoe;
 
 import java.awt.Color;
+import java.awt.Toolkit;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.InetAddress;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Scanner;
+
 
 /**
  *
  * @author TURBO
  */
-public class play_online extends javax.swing.JFrame {
+
+
+
+public class play_online extends javax.swing.JFrame  {
+    public boolean serv = false;
+    public String ip = "localhost";
+    public int port = 22222;
+//    private Scanner scanner = new Scanner(System.in);
+    private JFrame frame;
+//    private final int WIDTH = 506;
+//    private final int HEIGHT = 527;
+    private Thread thread;
+
+//    private try3Online.Painter painter;
+    public Socket socket;
+    public DataOutputStream dos;
+    public DataInputStream dis;
+
+    public ServerSocket serverSocket;
+
+    public String[] spaces = new String[9];
     
-    private String startGame = "X";
+    public boolean yourTurn = false;
+    public boolean circle = true;
+    public boolean accepted = false;
+    public boolean unableToCommunicateWithOpponent = false;
+    public boolean won = false;
+    public boolean enemyWon = false;
+    public boolean tie = false;
+    
+    public int errors = 0;
+    public int firstSpot = -1;
+    public int secondSpot = -1;
+    
+    private String waitingString = "Waiting for another player";
+    public String unableToCommunicateWithOpponentString = "Unable to communicate with opponent.";
+    private String wonString = "You won!";
+    private String enemyWonString = "Opponent won!";
+    private String tieString = "Game ended in a tie.";
+
+    public int[][] wins = new int[][] { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 }, { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, { 0, 4, 8 }, { 2, 4, 6 } };
+
+	/**
+	 * <pre>
+	 * 0, 1, 2 
+	 * 3, 4, 5 
+	 * 6, 7, 8
+	 * </pre>
+	 */
+    
+    
+    public String startGame = "X";
     private int xCount = 0;
     private int oCount = 0;
     boolean checker,winner =false;
-
+    
+    
+    
+    
+    public running myrun;
+    
     /**
      * Creates new form play_online
      */
     public play_online() {
         initComponents();
     }
+    public play_online(String ip1 , int port1 ,boolean circle1, boolean yourTurn1 ) {
+        initComponents();
+        ip = ip1;
+        port = port1;
+        circle = circle1;
+        yourTurn = yourTurn1;
+//        jlblplayerX.setText(String.valueOf(ip1));
+//        jlblplayerO.setText(String.valueOf(port1));
+        if (!connect()) initializeServer();
+        
+        frame = new JFrame();
+        
+        
+        
+    }
+    class running implements Runnable
+    {
+        public void run() {
+            while (true) {
+//            System.out.println("10");
+            tick();
+            if (!circle && !accepted) {
+//                System.out.println("2");
+                listenForServerRequest();
+                jButton1.setText("X");
+            }
+
+        }
+        }
+    }
+//    public void run() {
+////            System.out.println("1");
+//        while (true) {
+////            System.out.println("10");
+//            tick();
+//            if (!circle && !accepted) {
+////                System.out.println("2");
+//                listenForServerRequest();
+//                jButton1.setText("X");
+//            }
+//
+//        }
+//    }
     
+    private void initializeServer() {
+        try {
+                serverSocket = new ServerSocket(port, 8, InetAddress.getByName(ip));
+                serv = true;
+        } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("error in server.");
+        }
+        System.out.println("Successfully created server.");
+        yourTurn = true;
+        circle = false;
+    }
+    
+    private boolean connect() {
+        try {
+            socket = new Socket(ip, port);
+            dos = new DataOutputStream(socket.getOutputStream());
+            dis = new DataInputStream(socket.getInputStream());
+            accepted = true;
+        } catch (IOException e) {
+            System.out.println("Unable to connect to the address: " + ip + ":" + port + " | Starting a server");
+            return false;
+        }
+            System.out.println("Successfully connected to the server.");
+        return true;
+    }
+    
+    
+    public void tick() {
+        if (errors >= 10) unableToCommunicateWithOpponent = true;
+        
+        if (!yourTurn && !unableToCommunicateWithOpponent && !serv) {
+            try {
+                System.out.println("3");
+                int valu = dis.readInt();
+                jButton1.setText(String.valueOf(valu));
+                if (circle) jButton1.setText("X");
+                else jButton1.setText("O");
+//                checkForEnemyWin();
+//                checkForTie();
+                yourTurn = true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("4");
+                errors++;
+            }
+        }
+    }
+    
+    private void checkForWin() {
+        for (int i = 0; i < wins.length; i++) {
+            if (circle) {
+                if (spaces[wins[i][0]] == "O" && spaces[wins[i][1]] == "O" && spaces[wins[i][2]] == "O") {
+                    firstSpot = wins[i][0];
+                    secondSpot = wins[i][2];
+                    won = true;
+                }
+            } else {
+                if (spaces[wins[i][0]] == "X" && spaces[wins[i][1]] == "X" && spaces[wins[i][2]] == "X") {
+                    firstSpot = wins[i][0];
+                    secondSpot = wins[i][2];
+                    won = true;
+                }
+            }
+        }
+    }
+    private void checkForEnemyWin() {
+        for (int i = 0; i < wins.length; i++) {
+            if (circle) {
+                if (spaces[wins[i][0]] == "X" && spaces[wins[i][1]] == "X" && spaces[wins[i][2]] == "X") {
+                    firstSpot = wins[i][0];
+                    secondSpot = wins[i][2];
+                    enemyWon = true;
+                }
+            } else {
+                if (spaces[wins[i][0]] == "O" && spaces[wins[i][1]] == "O" && spaces[wins[i][2]] == "O") {
+                    firstSpot = wins[i][0];
+                    secondSpot = wins[i][2];
+                    enemyWon = true;
+                }
+            }
+        }
+    }
+
+    private void checkForTie() {
+        for (int i = 0; i < spaces.length; i++) {
+            if (spaces[i] == null) {
+                return;
+            }
+        }
+        tie = true;
+    }
+    public void listenForServerRequest() {
+        Socket socket = null;
+        try {
+            socket = serverSocket.accept();
+            dos = new DataOutputStream(socket.getOutputStream());
+            dis = new DataInputStream(socket.getInputStream());
+            accepted = true;
+            System.out.println("CLIENT HAS REQUESTED TO JOIN, AND WE HAVE ACCEPTED");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("listenForServerRequest error");
+        }
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -480,9 +691,30 @@ public class play_online extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-private JFrame frame;
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         
+//        if (accepted) {
+//            if (yourTurn && !unableToCommunicateWithOpponent && !won && !enemyWon) {
+//                if (jButton1.getText()!="X" && jButton1.getText()!="O") {
+                    if (!circle) jButton1.setText("X");
+                    else jButton1.setText("O");
+                    yourTurn = false;
+                    Toolkit.getDefaultToolkit().sync();
+                    try {
+                        dos.writeInt(1);
+                        dos.flush();
+                    } catch (IOException e1) {
+                        errors++;
+                        e1.printStackTrace();
+                    }
+
+                    System.out.println("DATA WAS SENT");
+                    checkForWin();
+                    checkForTie();
+
+//                }
+//            }
+//        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -519,6 +751,12 @@ private JFrame frame;
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
         //new game
+        myrun = new running();
+        thread = new Thread(myrun);
+        thread.start();
+        myrun.run();
+//        thread = new Thread(new running());
+//        thread.start();
         jButton1.setEnabled(true);
         jButton2.setEnabled(true);
         jButton3.setEnabled(true);
@@ -618,6 +856,9 @@ private JFrame frame;
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+//        play_online main = new play_online();
+//        Thread thread = new Thread((Runnable) main);
+//        thread.start();
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -644,9 +885,24 @@ private JFrame frame;
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new play_online().setVisible(true);
-            }
+////                play_online main = new play_online();
+////                Thread thread = new Thread((Runnable) main);
+////                thread.start();
+//                
+////                new play_online().setVisible(true);
+            } 
         });
+        
+//        while (true) {
+////            System.out.println("10");
+//            tick();
+//            if (!circle && !accepted) {
+////                System.out.println("2");
+//                listenForServerRequest();
+//                jButton1.setText("X");
+//            }
+//
+//        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -675,3 +931,7 @@ private JFrame frame;
     private javax.swing.JLabel jlblplayerX;
     // End of variables declaration//GEN-END:variables
 }
+
+
+
+
